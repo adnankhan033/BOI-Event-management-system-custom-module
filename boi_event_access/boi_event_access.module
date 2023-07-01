@@ -1,0 +1,24 @@
+<?php
+
+/**
+ * @file
+ * Contains boi_event_access.module.
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+
+/**
+ * Implements hook_help().
+ */
+function boi_event_access_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    // Main module help for the boi_event_access module.
+    case 'help.page.boi_event_access':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('Module to hide pages if permission is not present') . '</p>';
+      return $output;
+
+    default:
+  }
+}

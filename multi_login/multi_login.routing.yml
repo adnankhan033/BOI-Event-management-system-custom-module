@@ -1,0 +1,7 @@
+multi_login.otp:
+  path: '/user/otp'
+  defaults:
+    _form: '\Drupal\multi_login\Form\Otp'
+    _title: ''
+  requirements:
+    _role: 'anonymous' 

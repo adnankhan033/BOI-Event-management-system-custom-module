@@ -1,0 +1,53 @@
+#exampled .row.custom-request-row {
+    width: 100% !important;
+}
+ #exampled .custom-event-name.black-title{
+     font-size: 20px !important;
+    font-family: latobold !important;
+ }
+#exampled .custom-past-occur p.custom-event-name{
+    color:#B1B1B1 !important;
+}
+#exampled .event-closed-info h3 {
+    margin: 0px !important;
+}
+#exampled .event-closed-info h3 span {
+    font-family: latobold !important;
+    text-align: center !important;
+    font-size: 15px !important;
+    background-color: #11bc15 !important;
+    color: #fff !important;
+    line-height: 20px !important;
+    border-radius: 4px !important;
+    padding: 6px 0px !important;
+    display: block !important;
+}
+#exampled .custom-event-header .event-custom.date {
+    background-color: #eeeeee !important;
+    border-radius: 4px !important;
+    padding: 6px 6px !important;
+}
+#exampled  .date-settings-main h3{
+	font-size: 16px !important;
+	font-family: latobold !important;
+    color: #000 !important;
+}
+#exampled  .date-settings-main p{
+    font-size: 16px !important;
+    color: #8c8c8c !important;
+}
+#exampled  .date-settings .calculate-days {
+    text-align: center !important;
+    margin-top: 30px !important;
+}
+#exampled  .date-settings .calculate-days span {
+    padding: 14px 20px !important;
+    background-color: #d4d3d3 !important;
+    font-size: 18px !important;
+    font-family: latobold !important;
+    border-radius: 4px !important;
+}
+
+*{
+	background: red !important;
+}

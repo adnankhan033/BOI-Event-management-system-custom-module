@@ -1,0 +1,5 @@
+name: 'Multi Step Login'
+type: module
+description: 'Muliple step Login'
+core: 8.x
+package: 'multi_login'

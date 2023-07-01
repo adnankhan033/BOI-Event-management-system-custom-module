@@ -1,0 +1,8 @@
+
+custommail.default_controller_testingMail:
+  path: '/custom/mail'
+  defaults:
+    _controller: '\Drupal\custommail\Controller\DefaultController::testingMail'
+    _title: 'mail'
+  requirements:
+    _permission: 'access content'

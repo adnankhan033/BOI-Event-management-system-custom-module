@@ -1,0 +1,28 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.node.group.field_status
+    - node.type.group
+  module:
+    - options
+    - user
+id: node.group.default
+targetEntityType: node
+bundle: group
+mode: default
+content:
+  field_status:
+    weight: 101
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    type: list_default
+    region: content
+  links:
+    weight: 100
+    settings: {  }
+    third_party_settings: {  }
+    region: content
+hidden:
+  langcode: true

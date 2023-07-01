@@ -1,0 +1,8 @@
+
+qrgenerator.default_controller_qr:
+  path: '/qrgenerator/qr'
+  defaults:
+    _controller: '\Drupal\qrgenerator\Controller\DefaultController::qr'
+    _title: 'grgenerator'
+  requirements:
+    _permission: 'access content'

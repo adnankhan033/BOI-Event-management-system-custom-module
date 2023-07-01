@@ -1,0 +1,35 @@
+<?php
+
+/**
+ * @file
+ * Contains customsteps.module.
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+
+/**
+ * Implements hook_help().
+ */
+function customsteps_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    // Main module help for the customsteps module.
+    case 'help.page.customsteps':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('My Awesome Module') . '</p>';
+      return $output;
+
+    default:
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function customsteps_theme() {
+  return [
+    'customsteps' => [
+      'render element' => 'children',
+    ],
+  ];
+}

@@ -1,0 +1,202 @@
+<?php
+
+/**
+ * @file
+ * Preprocess functions for Basic.
+ */
+
+use Drupal\Core\Cache\CacheableMetadata;
+
+/**
+ * Prepares variables for the html.html.twig template.
+ */
+function basic_preprocess_html(&$variables) {
+
+    $roles = \Drupal::currentUser()->getRoles();
+    foreach ($roles as $role) {
+        $variables['attributes']['class'][] = "role-{$role}";
+    }
+
+    $current_path = \Drupal::service('path.current')->getPath();
+    $internal_path = \Drupal::service('path_alias.manager')->getAliasByPath($current_path);
+    $variables['attributes']['class'][] = str_replace("/", "", 'app sidebar-mini ltr '.$internal_path);
+
+
+    $variables['theme_path'] = base_path() . $variables['directory'];
+    try {
+        $variables['is_front'] = \Drupal::service('path.matcher')->isFrontPage();
+    }
+    catch (Exception $e) {
+        // If the database is not yet available, set default values for these
+        // variables.
+        $variables['is_front'] = FALSE;
+    }
+
+    // If we're on the front page.
+    if (!$variables['is_front']) {
+        // Add unique classes for each page and website section.
+        $path = \Drupal::service('path.current')->getPath();
+        $alias = \Drupal::service('path_alias.manager')->getAliasByPath($path);
+        $alias = trim($alias, '/');
+        if (!empty($alias)) {
+            $name = str_replace('/', '-', $alias);
+            $variables['attributes']['class'][] = 'page-' . $name;
+            list($section,) = explode('/', $alias, 2);
+            if (!empty($section)) {
+                $variables['attributes']['class'][] = 'section-' . $section;
+            }
+        }
+    }
+
+    // Add cachability metadata.
+    $theme_name = \Drupal::theme()->getActiveTheme()->getName();
+    $theme_settings = \Drupal::config($theme_name . '.settings');
+    CacheableMetadata::createFromRenderArray($variables)
+        ->addCacheableDependency($theme_settings)
+        ->applyTo($variables);
+    // Union all theme setting variables to the html.html.twig template.
+    $variables += $theme_settings->getOriginal();
+
+}
+
+/**
+ * Prepares variables for the field.html.twig template.
+ */
+function basic_preprocess_field(&$variables, $hook) {
+    // Make additional variables available to the template.
+    $variables['bundle'] = $variables['element']['#bundle'];
+}
+
+/**
+ * Implements hook_theme_suggestions_page_alter().
+ */
+function basic_theme_suggestions_page_alter(array &$suggestions, array $variables) {
+    if ($node = \Drupal::routeMatch()->getParameter('node')) {
+        $suggestions[] = 'page__' . $node->bundle();
+    }
+}
+
+
+
+/**
+* Implements hook_preprocess_page().
+*/
+function basic_preprocess_page(&$variables) {
+    $variables['render_core_login_form'] = FALSE;
+    if (!\Drupal::currentUser()->id()) {
+        $form = Drupal::formBuilder()->getForm(Drupal\user\Form\UserLoginForm::class); 
+        $render = Drupal::service('renderer');
+
+        $variables['render_core_login_form'] = $render->renderPlain($form);
+    }  
+
+
+}
+
+function basic_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
+    if($form_id =='user_register_form'){
+                       // kint($form);
+                       // kint($form['account']['pass']);
+        //( $form['field_full_name']['widget'][0]['value']['#description'] ='fasdfasdf');
+        $form['#prefix'] ='<div class="login100-form validate-form">';
+
+        $form['account']['name']['#prefix'] = '<div class="wrap-input100 validate-input">';
+        $form['account']['name']['#attributes']['class'] = array('input100');
+        $form['account']['name']['#attributes']['placeholder'] = array('Username');
+            $form['account']['name']['#description'] = '<span class="symbol-input100"><i class="zmdi zmdi-lock" aria-hidden="true"></i></span>';
+        $form['account']['name']['#suffix'] = '</div>';
+
+       $form['account']['pass_pass1']['#prefix'] = '<div class="wrap-input100 validate-input adyanoo">';
+       $form['account']['pass_pass1']['#attributes']['class'] = array('input100');
+        $form['account']['pass_pass1']['#description'] = '<span class="symbol-input100"><i class="zmdi zmdi-lock" aria-hidden="true"></i></span>';
+
+        $form['account']['pass_pass1']['#suffix'] = '</div>';
+
+
+        $form['account']['mail']['#prefix'] = '<div class="wrap-input100 validate-input">';
+        $form['account']['mail']['#attributes']['class'] = array('input100');
+        $form['account']['mail']['#attributes']['placeholder'] = array('Email');
+        $form['account']['mail']['#suffix'] = '</div>';
+        $form['account']['mail']['#description'] = '<span class="symbol-input100"><i class="zmdi zmdi-lock" aria-hidden="true"></i></span>';
+
+
+        $form['account']['pass']['#prefix'] = '<div class="wrap-input100 validate-input">';
+        $form['account']['pass']['#attributes']['class'] = array('hello','fasdfds');
+        $form['account']['pass']['#suffix'] = '</div>';
+              // pass_pass1
+              // field-full-name-0-value
+        $form['field_full_name']['#prefix'] = '<div class="wrap-input100 validate-input">';
+        $form['field_full_name']['#attributes']['class'] = 'input100';
+        $form['field_full_name']['widget'][0]['value']['#description'] = '<span class="symbol-input100"><i class="zmdi zmdi-lock" aria-hidden="true"></i></span>';
+        $form['field_full_name']['#suffix'] = '</div>';
+
+        $form['field_phone']['#prefix'] = '<div class="wrap-input100 validate-input">';
+        $form['field_phone']['#attributes']['class'] = 'input100';
+        $form['field_phone']['widget'][0]['value']['#description'] = '<span class="symbol-input100"><i class="zmdi zmdi-lock" aria-hidden="true"></i></span>';
+        $form['field_phone']['#suffix'] = '</div>';
+
+
+
+        $form['field_gender']['#prefix'] = '<div class="wrap-input100 validate-input">';
+        $form['field_gender']['widget'] ['#options']['_none'] ="Select Gender";
+        $form['field_gender']['#suffix'] = '</div>';
+        //        $form['field_gender']['widget']['#description'] = '<span class="symbol-input100"><i class="zmdi zmdi-lock" aria-hidden="true"></i></span>';
+
+        $form['#suffix'] = '</div>';
+    }
+
+
+
+
+
+
+
+
+
+
+    if($form_id =='user_login_form'){
+        $settings['rebuild_access'] = TRUE;
+        $form['#prefix'] = '<div class="custom-loginform">';
+
+        $form['name']['#attributes']['class'] = array('input100');
+        $form['name']['#attributes']['placeholder'] = 'Username';
+        $form['pass']['#attributes']['placeholder'] = 'Password';
+
+        $form['pass']['#attributes']['class'] = array('input100');
+        $form['name']['#prefix'] = '<div class="wrap-input100 validate-input">';
+        $form['name']['#suffix'] = '</div>';
+        $form['pass']['#prefix'] = '<div class="wrap-input100 validate-input">';
+        $form['pass']['#suffix'] = '</div>';
+
+        $form['forgotpass']=[
+            '#markup'=> '<div class="text-end pt-1"><p class="mb-0"><a href="/user/password" class="text-primary ms-1">Forgot Password?</a></p> </div>',];
+        $form['actions']['#prefix'] = '<div class="container-login100-form-btn">';
+        $form['actions']['#suffix'] = '</div>';
+        $form['actions']['#attributes']['class'] = array('login100-form-btn btn-primary');
+        $form['#attributes']['class'][] = 'login100-form validate-form';
+        $form['name']['#description'] = '<span class="focus-input100"></span><span class="symbol-input100"><i class="mdi mdi-account" aria-hidden="true"></i></span>'; 
+        $form['pass']['#description'] = '<span class="symbol-input100"><i class="zmdi zmdi-lock" aria-hidden="true"></i></span>';
+        $form['createAccount']=[
+            '#markup'=> '<div class="text-center pt-3"> <p class="text-dark mb-0">Not a member?<a href="/user/register" class="text-primary ms-1">Create an Account</a></p> </div>',
+            '#weight'=> 100,
+        ];  
+        $form['social']=[
+            '#markup'=> '<div class="card-footer">
+                        <div class="d-flex justify-content-center my-3">
+                            <a href="" class="social-login  text-center me-4">
+                                <i class="fa fa-google"></i>
+                            </a>
+                            <a href="" class="social-login  text-center me-4">
+                                <i class="fa fa-facebook"></i>
+                            </a>
+                            <a href="" class="social-login  text-center">
+                                <i class="fa fa-twitter"></i>
+                            </a>
+                        </div>
+                    </div>',
+            '#weight'=> 200,
+        ]; 
+
+        $form['#suffix'] = '</div>';
+    }
+}

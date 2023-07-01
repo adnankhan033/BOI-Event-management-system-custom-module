@@ -1,0 +1,11 @@
+#This access_check is called on all routes
+services:
+  boi_event_access.permission:
+    class: Drupal\boi_event_access\Access\PermissionAccessCheck
+    arguments: ['@current_user']
+    tags:
+      - { name: access_check, applies_to: _boi_event_permission,  priority: -1000 }
+  boi_event_access.route_alter:
+    class: Drupal\boi_event_access\Routing\RouteAlter
+    tags:
+      - { name: event_subscriber }

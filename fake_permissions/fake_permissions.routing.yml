@@ -1,0 +1,7 @@
+fake_permissions.role_permission_form:
+  path: '/fake_role/{role_name}'
+  defaults:
+    _form: '\Drupal\fake_permissions\Form\RolePermissionForm'
+    _title: 'RolePermissionForm'
+  requirements:
+    _access: 'TRUE'

@@ -1,0 +1,19 @@
+boi_erp.role_form:
+  path: '/role'
+  defaults:
+    _form: '\Drupal\boi_erp\Form\RoleForm'
+#    _title: ''
+  requirements:
+    _role: 'administrator+siteadmin'
+  options:
+    no_cache: TRUE
+    
+boi_erp.role_form_edit:
+  path: '/role/{rid}/edit'
+  defaults:
+    _form: '\Drupal\boi_erp\Form\RoleForm'
+#    _title: 'RoleForm'
+  requirements:
+    _role: 'administrator+siteadmin'
+  options:
+    no_cache: TRUE

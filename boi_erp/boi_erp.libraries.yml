@@ -1,0 +1,6 @@
+lider_lib:
+  js:
+    js/custom.js: {}
+  css:
+    theme:
+      css/slider.css: {}

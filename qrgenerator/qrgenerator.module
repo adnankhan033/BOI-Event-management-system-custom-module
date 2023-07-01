@@ -1,0 +1,48 @@
+<?php
+
+/**
+ * @file
+ * Contains qrgenerator.module.
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+use \Drupal\Core\Form\FormStateInterface;
+
+/**
+ * Implements hook_help().
+ */
+
+function qrgenerator_form_alter(&$form, $form_state, $form_id){
+        if($form_id =='node_article_form'){
+            $form['actions']['submit']['#submit'][] = 'article_custom_submit';
+        }
+    }
+
+function article_custom_submit(&$form, $form_state){
+    $title = $form_state->getValue('title');
+    return $title;
+}
+
+function qrgenerator_help($route_name, RouteMatchInterface $route_match) {
+    switch ($route_name) {
+            // Main module help for the qrgenerator module.
+        case 'help.page.qrgenerator':
+            $output = '';
+            $output .= '<h3>' . t('About') . '</h3>';
+            $output .= '<p>' . t('My Awesome Module') . '</p>';
+            return $output;
+
+        default:
+    }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function qrgenerator_theme() {
+    return [
+        'qrgenerator' => [
+            'render element' => 'children',
+        ],
+    ];
+}

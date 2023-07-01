@@ -1,0 +1,1851 @@
+<?php
+
+/**
+ * @file
+ * Contains custom_hooks.module.
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+use \Drupal\Core\Form\FormStateInterface;
+use Drupal\views\Plugin\views\query\QueryPluginBase;
+use Drupal\views\ViewExecutable;
+use \Symfony\Component\HttpFoundation\RedirectResponse;
+use Drupal\node\Entity\NodeType;
+use Drupal\node\Entity\Node;
+use Drupal\paragraphs\Entity\Paragraph;
+use Drupal\Core\Ajax\AjaxResponse;
+use Drupal\Core\Ajax\CloseModalDialogCommand;
+use Drupal\Core\Url;    
+use Drupal\user\Entity\User; 
+
+/**
+ * Implements hook_preprocess_html().
+ */
+function custom_hooks_preprocess_html(&$variables) {
+    $current_path = \Drupal::service('path.current')->getPath();
+    $currentUser = \Drupal::currentUser();
+    $current_id = $currentUser->id();
+    $user_current_pass = '/user/'.$current_id.'/change-password';
+
+    //    kint($current_path);
+    if($current_path == $user_current_pass)
+    {
+        $variables['attributes']['class'][] = 'user-profile-change-password';
+    }
+}
+
+/**
+ * Implements hook_help().
+ */
+function custom_hooks_help($route_name, RouteMatchInterface $route_match) {
+    switch ($route_name) {
+            // Main module help for the custom_hooks module.
+        case 'help.page.custom_hooks':
+            $output = '';
+            $output .= '<h3>' . t('About') . '</h3>';
+            $output .= '<p>' . t('Custom Hooks Module') . '</p>';
+            return $output;
+
+        default:
+    }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function custom_hooks_theme() {
+    return [
+        'custom_hooks' => [
+            'render element' => 'children',
+        ],
+    ];
+}
+function fillFields(&$form, $form_state)
+{
+
+    $response = new \Drupal\Core\Ajax\AjaxResponse();
+    $uid = $form_state->getValue("field_name")[0]['target_id'];
+
+    $user = \Drupal\user\Entity\User::load($uid);
+    $userEmail = $user->getEmail();
+    $type = $user->field_cnic_passport_check->getValue();
+    $pass = $user->field_passport->getValue();
+    $nic = $user->field_cnic->getValue();
+    //jQuery('selecto').hide()
+    if($user){
+        $response->addCommand(new \Drupal\Core\Ajax\InvokeCommand("#edit-custom-email", "val",[$userEmail]));
+        //        $response->addCommand(new \Drupal\Core\Ajax\InvokeCommand('[for="edit-custom-cnic-passport"]', "html",[$type[0]['value']??"No type"]));
+
+        if(isset($type[0]['value']))
+        {
+
+            $response->addCommand(new \Drupal\Core\Ajax\InvokeCommand('[for="edit-custom-cnic-passport"]', "html",[strtoupper($type[0]['value'])] ) );
+
+            $response->addCommand(new \Drupal\Core\Ajax\InvokeCommand('[name="custom_cnic_passport_type"][value="'.$type[0]['value'].'"]', "click",[] ) );
+
+            $response->addCommand(new \Drupal\Core\Ajax\InvokeCommand('#edit-custom-cnic-passport-type--wrapper', "show",[] ) );
+
+
+            $response->addCommand(new \Drupal\Core\Ajax\InvokeCommand('.form-item-custom-cnic-passport', "show",[] ) );
+
+            //            print_r($type[0]['value']);
+            //            exit;
+            $response->addCommand(new \Drupal\Core\Ajax\InvokeCommand('#no_type_msg', "hide",[] ) );
+
+            if($type[0]['value'] == 'CNIC')
+            {
+                $response->addCommand(new \Drupal\Core\Ajax\InvokeCommand("#edit-custom-cnic-passport", "val",[$nic[0]['value']??""]));
+            }
+            else{
+                $response->addCommand(new \Drupal\Core\Ajax\InvokeCommand("#edit-custom-cnic-passport", "val",[$pass[0]['value']??""]));
+            }
+
+        }else{
+            //hidefield
+            $response->addCommand(new \Drupal\Core\Ajax\InvokeCommand('.form-item-custom-cnic-passport', "hide",[] ) );
+            $response->addCommand(new \Drupal\Core\Ajax\InvokeCommand('#edit-custom-cnic-passport-type--wrapper', "hide",[] ) );
+            $response->addCommand(new \Drupal\Core\Ajax\InvokeCommand('#no_type_msg', "show",[] ) );
+
+        }
+
+    }else{
+        $response->addCommand(new \Drupal\Core\Ajax\alertCommand("NO user found "));
+    }
+    return $response;
+}
+
+
+
+function doNothing($form, $form_state)
+{
+    $form_state->setRebuild();
+    return;
+}
+
+function hideModalFunction()
+{
+    $response = new AjaxResponse();
+    $response->addCommand(new CloseModalDialogCommand());
+    return $response;
+}
+
+
+function adnan(&$form, $form_state){
+    $name = $form_state->getValue('roles');
+    $updated_role = $form['select_roles']['#value'];
+    $user = User::load(188);
+
+    foreach($updated_role as $roles){
+        $user->addRole('hr_manager');
+
+    } 
+
+    $user->save();    
+
+
+}
+
+
+
+//function all_role_redirect()
+//{
+//    drupal_set_message(t("Role has been added successfully"));
+//
+//    global $base_url;
+//    $url_role_redirect = $base_url.'/all-role'; 
+//    if($url_role_redirect){
+//
+//        $response = new RedirectResponse($url_role_redirect);
+//
+//        $response->send();
+//        return $response;
+//    }
+//
+//} 
+
+
+
+function all_login_redirection($form, &$form_state) {
+    $path_reset_pass = $current_path = \Drupal::service('path.current')->getPath();
+    $getcurrentuserid  = explode('/',$path_reset_pass);
+    //
+    $user_id_from_url = $getcurrentuserid[3];
+    $passnew = $form_state->getValue('pass');
+
+    //    $current_user = \Drupal::currentUser();
+    //    $userabc = \Drupal\user\Entity\User::load($current_user->id());
+
+
+    $user = User::load($user_id_from_url);
+    $roless = $user->getRoles();
+    $user->setPassword($passnew);
+    $user->save();
+    user_login_finalize($user);
+    global $base_url;
+    $url_role_redirect = $base_url.'/events'; 
+    $url_organiser = $base_url.'/assigned-events-organizer'; 
+    $url_siteadmin = $base_url.'/dashboard'; 
+
+    if($roless ==['authenticated','siteadmin']){
+        if($url_organiser){
+            drupal_set_message('Your password has been updated successfully.');
+            $response = new RedirectResponse($url_siteadmin);
+
+            $response->send();
+            return $response;
+        }  
+
+    }
+    if($roless ==['authenticated','sub_organizer']){
+        if($url_organiser){
+            drupal_set_message('Your password has been updated successfully.');
+            $response = new RedirectResponse($url_organiser);
+
+            $response->send();
+            return $response;
+        }  
+    }
+    if($roless ==['authenticated','attandee']){
+        if($url_role_redirect){
+            drupal_set_message('Your password has been updated successfully.');
+            $response = new RedirectResponse($url_role_redirect);
+
+            $response->send();
+            return $response;
+        }
+    }
+}
+//function jm_redirect_handler($form, &$form_state) {
+//    kint($form);
+//    kint($form_state); exit;
+//    $current_user = \Drupal::currentUser();
+//    $roles = $current_user->getRoles();
+//    global $base_url;
+//    $current_path = \Drupal::service('path.current')->getPath();
+//    $arg  = explode('/',$current_path);
+//    $target_comment_id = $arg[4];
+//    $organizer_checklist_url = "/task_for_siteadmin";
+//    $org_submitted_redirect = $base_url.$organizer_checklist_url."/$target_comment_id";
+//
+//
+//    if (in_array("siteadmin", $roles)){
+//        $response = new Symfony\Component\HttpFoundation\RedirectResponse($org_submitted_redirect); //set url
+//        $response->send();
+//        return; 
+//    }
+//}
+
+function submitted_comment($form, &$form_state) {
+
+    $current_user = \Drupal::currentUser();
+    $roles = $current_user->getRoles();
+    global $base_url;
+    $current_path = \Drupal::service('path.current')->getPath();
+    $arg  = explode('/',$current_path);
+    $target_comment_id = $arg[4];
+    $organizer_checklist_url = "/task_for_siteadmin";
+    $org_submitted_redirect = $base_url.$organizer_checklist_url."/$target_comment_id";
+
+    if (in_array("siteadmin", $roles)){
+        $response = new Symfony\Component\HttpFoundation\RedirectResponse($org_submitted_redirect); //set url
+        $response->send();
+        return; 
+    }
+
+
+}
+
+function custom_hooks_form_alter(&$form, $form_state, $form_id)
+{
+
+    if($form_id  == 'comment_custom_comment_form')
+    {
+        $form['actions']['submit']['#submit'][] = 'submitted_comment';
+    }
+
+    //    $current_path = \Drupal::service('path.current')->getPath();
+    //    $arg  = explode('/',$current_path);
+    //    $target_comment_id = $arg[2];
+    //    $organizer_checklist_url = "/task_for_siteadmin";
+    //    $org_submitted_redirect = $base_url.$organizer_checklist_url."/$target_comment_id/assigned";
+    //    $site_admin_checkbox_current_path = $base_url.$current_path; 
+    //    $site_admin_assigned_checkboxes   = $org_submitted_redirect; 
+    //
+    //    if($form_id =='comment_custom_comment_form' and $site_admin_checkbox_current_path == $site_admin_assigned_checkboxes )
+    //    {
+    //        $form['actions']['submit']['#submit'][] = 'jm_redirect_handler';
+    //    }
+
+
+    // if($logged_in){
+
+
+    //    }
+    //    drupal_set_message('For fade out testing');
+
+    if($form_id =='views_exposed_form'){
+        $form['actions']['submit']['#value'] ='Search';
+    }
+    //    password reset form 
+    if($form_id=='user_pass_reset'){
+        $form['help']['#markup'] ="<p class='custom-message-forgot'>Please Click on the Login Button to Update yours New Password.</p>";
+        $form['message']['#markup'] ="";
+
+
+        $form['loginimage1'] =[
+            '#markup' => '<h3 class="custom-login-image">Set New Password</h3>',
+            '#weight' =>-10,
+        ]; 
+
+        $form['emptydivtwo1'] =[
+            '#markup' => '<div class="custom-empty-two forgot-pass-custom"></div>',
+            '#weight' =>-11,
+        ]; 
+        ($form['actions']['submit']['#value'] ='UPDATE PASSWORD'); 
+
+        $form['actions']['submit']['#submit'][] = 'all_login_redirection';
+    }
+
+    if(strpos($form_id, 'views_form_event_detail_attachment_3_') === 0)
+    {
+        $form['#action'] = '';
+    }
+
+    //    $module_handler = \Drupal::service('module_handler');
+    //    $module_path = $module_handler->getModule('change_pwd_page')->getPath();
+    //    kint($module_path);
+    //    exit;
+    //                kint($form_id);
+    //            exit;
+
+    //    $view = $form_state->getStorage('view');
+    //    //    kint($view);
+    //
+    //    if (($view['view']->id() == 'email_templates') && ($view['view']->current_display == 'page_5')) {
+    ////        kint();
+    //        $form['#form_id']['#attribute']['class'] = 'testing-test';
+    //    }
+
+
+
+
+    if($form_id == 'node_new_event_form'){
+        //        kint($form);
+        $form['#attributes']['class'][] = 'new-event-rquest';
+        $form['field_add_new_session']['#attributes']['class'][] = 'event-session';
+
+    }
+    if($form_id == 'node_new_event_form'){
+        $form['#attributes']['class'][] = 'new-event-rquest';
+        $form['field_add_new_session']['#attributes']['class'][] = 'event-session';
+    }
+
+    //    if(!in_array($form_id, ['check_list_view_form', 'check_list_view_form']))
+
+    //        $logged_in = \Drupal::currentUser()->isAuthenticated();
+
+    //        $form['#attributes']['class'][] = 'new-event-rquest';
+
+
+    if($form_id == 'page_specific_class_settings_form')
+    {
+        $form['url_with_class']['#maxlength'] = 500;
+    }
+
+
+    if($form_id == 'change_pwd_form'){
+        $currentUser = \Drupal::currentUser();
+        $current_id = $currentUser->id();
+        $form['#attributes']['class'][] = 'user_change_password';
+        $form['back'] = array(
+            '#markup' => '<div class="btn btn-default custom-back"><a href="https://115.186.58.50/boi-event-portal/user/'.$current_id.'/edit">Back</a></div>',
+            '#weight' => -9,
+        );
+        $form['current_pass'] ['#required'] = false;
+        //                    kint($form['#attributes']);
+        //        exit;
+    }
+
+    //add role submit redirect
+    if($form_id =='comment_custom_comment_form'){
+        //        $form['actions']['submit']['#submit'][] = 'my_submit_handler';
+        //        array_unshift($form['actions']['submit']['#submit'],'my_submit_handler');
+        //        array_unshift($form['actions']['submit']['#submit'],'my_submit_handler');
+        //        kint($form['actions']['submit']['#submit']);
+        //          kint($form);
+        //        $form['actions']['submit']['#value'] = "DONT";
+        //        pri
+        //        $url = \Drupal\Core\Url::fromRoute('entity.node.canonical', ['node' => 1160]);
+        //        return $form_state->setRedirectUrl($url);
+        $form['actions']['submit']['#value'] = t('Submit Comment');
+
+    }
+
+    if($form_id =='role_form')
+    {
+        //        $form['submit']['#submit'][] = 'all_role_redirect';
+    }
+
+
+
+    if($form_id == 'node_checklist_form')
+    { 
+        if(isset($_GET['_wrapper_format']) && $_GET['_wrapper_format'] == 'drupal_modal')
+        {
+            $form['actions']['submit']['#ajax'] = [
+                'callback' => 'hideModalFunction'
+            ];
+
+            $form['no-edit-button'] = [
+                '#markup' => '<div id="edit-donothing"></div>',
+            ];
+
+            $form['actions']['submit']['#value'] = 'SAVE';
+        }
+
+    }
+
+    //    forgot password email form
+    if($form_id =='user_pass')
+    {
+        global $base_url;
+        $user_back_login = $base_url.'/user/login';
+
+        $form['preview'] = array(
+            '#markup' => '<div class="btn btn-default custom-back"><a href="'.$user_back_login.'">Back</a></div>',
+            '#weight' => -9,
+        );
+        $form['emptydivtwo'] =[
+            '#markup' => '<div class="custom-empty-two forgot-emil-custom custom-user-forgot"></div>',
+            '#weight' =>-11,
+        ];  
+
+        //                hide login page logo
+        //                $form['emptydivone'] =[
+        //                    '#markup' => '<div class="custom-empty-one"></div>',
+        //                    '#weight' =>-9,
+        //                ]; 
+        $form['loginimage'] =[
+            '#markup' => '<h3 class="custom-login-image">Forgot Password</h3>',
+            '#weight' =>-10,
+        ];
+
+
+        //        kint
+        ($form['actions']['submit']['#value'] ='FORGOT PASSWORD'); 
+        //        exit;
+
+    }
+
+    if($form_id =='node_checklist_edit_form'){
+        //     kint($form['field_add_task2']['widget']['add_more']['add_more_button_checklist_title_priority']['#value']); exit;
+    }
+
+    if($form_id =='node_new_event_form' || $form_id =='node_new_event_edit_form'){
+
+
+//kint("test");
+        //placeholders
+        $form['field_user']['widget']['#select2']['placeholder'] = 'Focal Person';
+        $form['field_add_new_session']['widget'][0]['subform']['field_focal_person']['widget']['#select2']['placeholder'] = 'Enter Organizer Name';
+
+        ($form['field_add_new_session']['widget'][0]['subform']['field_add_sub2']['widget'][0]['subform']['field_checklist']['widget']['#select2']['placeholder'] = 'Checklist');
+        //
+        ($form['field_add_new_session']['widget'][0]['subform']['field_add_sub2']['widget'][0]['subform']['field_users']['widget']['#select2']['placeholder'] = 'Sub Organizer');
+        //
+        ($form['field_add_new_session']['widget'][0]['subform']['field_add_sub2']['widget'][0]['subform']['field_past_events']['widget']['#select2']['placeholder'] = 'Group');
+
+
+        //      kint ($form['field_add_new_session']['widget'][0]['subform']);
+
+
+        $form['actions']['doNothing'] = [
+            '#type' => 'submit',
+            '#submit' => ['doNothing'],
+        ];
+
+
+        //    $form['field_user']['#attributes']['placeholder'] = t('Focal person');
+        //        $form['']
+        //        kint($form['actions']['submit']['#submit'][] = "");
+        //
+        //        kint($form['field_add_new_session']['widget'][0]['subform']['field_add_sub2']['widget'][0]['subform']['field_checklist']['widget'][0]);
+        $form['addNewSessionAppend'] =[
+            '#markup' =>"<div class='custom-append-session'><div class='custom-session-plus'><span>+</span>Add New Session</div></div>",
+            '#weight' => 7,
+
+        ];  
+        $form['actions']['submit']['#submit'][] = 'event_custom_submit';
+        //        $form['nosubmit']=[
+        //            '#type' =>'button',
+        //            '#value' =>'',
+        //            '#weight' => 100,
+        //        ];
+    }
+    if($form_id =='node_new_event_edit_form'){
+        //        $value = \Drupal::routeMatch()->getParameters()->all()['node']->id();
+
+        $form['back'] = array(
+            '#markup' => '<div class="btn btn-default custom-back"><a href="https://115.186.58.50/boi-event-portal/all-events">Back</a></div>',
+            '#weight' => -7,
+        );
+
+        $form['addNewSessionAppend'] =[
+            '#markup' =>"<div class='custom-append-session'><div class='custom-session-plus'><span>+</span>Add New Session</div></div>",
+            '#weight' => 7,
+
+        ];  
+    }
+
+
+    if($form_id == 'node_attendance_form')
+    {
+
+        $form['actions']['submit']['#submit'][] = 'attendance_redirect_submit';
+
+        $form['attachment'] = [
+            '#markup' => '<div class="attachment-main"><div class="attendance-attachment btn">MARK ATTENDANCE  (REGISTERED USERS)
+
+</div></div>'
+        ];
+        $form['attachment']['#weight'] = 1;
+
+
+        //        $form['plus'] =[
+        //            '#markup'=> '<div class="attachment btn">
+        //             <span>+</span>
+        //             <span>Attach List</span>
+        //          </div>',
+        //            '#weight' => 10,
+        //
+        //        ];
+        $form['gr1'] = [
+            '#markup' => '<div class="attendance-wrapper">',
+            '#type' => 'container',
+            '#weight' => $form['field_name']['#weight']
+        ];
+
+        $form['field_name']['#weight'] = 0;
+        $form['field_name']['widget']['#ajax'] = [
+            //            'wrapper' => 'cc',
+            'callback' => 'fillFields',
+            'event' => 'change'
+        ];
+        //        $form['gr1']['cc'] = ['#markup'=> '<div id="cc">This is cc</h1>'];
+        $form['gr1']['field_name'] = $form['field_name'];
+        unset($form['field_name']);
+
+        $form['gr1']['custom_email'] = [
+            '#type' => 'email',
+            '#title' => "Email",
+        ];
+
+        $form['gr1']['test'] = [
+            '#markup' => '<div class="cnic-passport-selection">',
+        ];
+
+        $form['gr1']['custom_cnic_passport_type'] = [
+            '#type' => 'radios',
+            '#title' => "Type",
+            '#options' => [
+                'CNIC'=>'CNIC',
+                'Passport'=>'Passport',
+            ],
+            //            '#default_value' => 'cnic'
+        ];
+
+        $form['gr1']['custom_cnic_passport'] = [
+            '#type' => 'textfield',
+            '#title' => "Passport",
+        ];
+
+        $form['gr1']['test2'] = [
+            '#markup' => '</div></div></div>',
+        ];
+
+        //        $form['#action'] = '';
+
+
+
+
+        $subForm  = \Drupal::formBuilder()->getForm('Drupal\custom_hooks\Form\AttendanceForm');
+        $subForm = \Drupal::service('renderer')->render($subForm);
+        //        $form['#suffix'] = \Drupal\Core\Render\Markup::create('<div class="">'.$subForm.'</div>');   
+
+        $subForm1  = \Drupal::formBuilder()->getForm('Drupal\custom_hooks\Form\ListAttendanceForm');
+        $subForm1 = \Drupal::service('renderer')->render($subForm1);
+        $form['#suffix'] = \Drupal\Core\Render\Markup::create('<div class="">'.$subForm1.$subForm.'</div>'); 
+
+    }
+
+    if($form_id == 'user_login_form'){
+
+        $form['name']['#title'] ="";
+        $form['name']['#attributes']['placeholder'] = t('Enter registered email');
+
+
+
+        if($form_state->get("submitedOnce"))
+        {
+
+            //   ******         hide user login password 2nd logo ******//
+            //            $form['emptydivone'] =[
+            //                '#markup' => '<div class="custom-empty-one"></div>',
+            //                '#weight' =>-9,
+            //
+            //
+            //            ];       
+
+            global $base_url;
+            $user_back_login = $base_url.'/user/login';
+
+            $u = $form_state->get('loadedUser');
+
+            $name = $form_state->getValue("name");
+            //            $form['namepre'] = [
+            //                '#markup' => 'Enter password for '.$u->getUsername()
+            //            ];
+            $form['name']['#value'] =     $u->getUsername();
+            $form['name']['#access'] =     false;
+
+
+
+            $form['actions']['submit']['#value'] = t('Login');
+
+            $form['loginimage'] =[
+                '#markup' => '<h3 class="custom-login-image">Login</h3>',
+                '#weight' =>-10,
+            ]; 
+
+
+            //            login password
+
+            $form['emptydivtwo'] =[
+                '#markup' => '<div class="custom-empty-two forgot-pass-custom"></div>',
+                '#weight' =>-11,
+            ]; 
+
+            $form['preview'] = array(
+                '#markup' => '<div class="btn btn-default custom-back"><a href="'.$user_back_login.'">Back</a></div>',
+                '#weight' => 0,
+            );
+
+            $form['emptydivpass'] =[
+
+                //                '#markup' => "<div class='custom-password-reset text-right'><a href='$base_url/user/password'>Forgot Password?</a></div>",
+                '#markup' => "<div class='custom-password-reset text-right'><a href='https://115.186.58.50/boi-event-portal/user/password'>Forgot Password?</a></div>",
+                //                '#weight' =>-11,
+            ];
+            //            $form['actions']['submit']['#submit'][] = 'login_to_dashboards';
+
+        }else{
+            //            $form['emptydivone'] =
+            //                [
+            //                '#markup' => '<div class="custom-empty-one"></div>',
+            //                '#weight' =>-9,
+            //            ];
+            $form['loginimage'] =[
+                '#markup' => '<h3 class="custom-login-image">Login</h3>',
+                '#weight' =>-10,
+
+
+
+            ]; 
+            $form['emptydivtwo'] =[
+                '#markup' => '<div class="custom-empty-two"></div>',
+                '#weight' =>-11,
+
+
+            ];
+
+            $form_state->set('oldInfoPass', $form['pass']);
+            $form_state->set('oldInfoSubmit', $form['#submit']);
+            $form_state->set('oldInfoValidate', $form['#validate']);
+            unset($form['pass']);
+
+
+            unset($form['#validate']);
+
+            $form['actions']['submit']['#value'] = t('Next');
+            $form['actions']['submit']['#submit'][] = 'login_form_handler';
+
+            //        kint(\Drupal::config('system.site')->get('name')); exit;
+            //            $form['forgotemail']=[
+            //                '#markup' => "<div class='text-right'><a href='https://115.186.58.50/boi-event-portal/user/password'>Forgot Email?</a></div>",
+            //                '#weight' =>2,
+            //            ];  
+
+            $userRegister = $form_state->setRedirect('user.register');	
+            $form['donthaveaccount']=[
+                '#markup' => "<div class='text-left'>Don't have account? <a href='https://115.186.58.50/boi-event-portal/user/register'>Register</a> </div>",
+                '#weight' =>100,
+            ];
+        }
+        //                $form['actions']['submit']['#submit'][] = 'all_login_redirection1';
+
+
+    }
+
+    //    Exclude attandance title
+    //    kint($form_id); exit;
+    if($form_id =='node_attendance_form'  || $form_id =='node_attachments_form'){
+        $form['actions']['submit']['#submit'][] = 'method';
+
+
+        $form['title']['widget'][0]['value']['#value'] = 'Attendance by '.(\Drupal::currentUser()->id());
+        $form['title']['#access'] = false;
+    }
+
+    if($form_id =='node_attendance_form')
+    {
+        $events_ids = array_keys($form['field_select_event']['widget']['#options']);
+        $attendees_event = [];
+
+        $flag_id = 'request';
+        // Use a query.
+        $query = \Drupal::database()
+            ->select('flagging', 'f')
+            ->fields('f', array())
+            //            ->condition('entity_id', 1487)
+            ->condition('flag_id', $flag_id);
+
+
+        $result = $query->execute()
+            ->fetchAll();
+
+        $all_event_flags = [];
+        foreach($result as $flagObj)
+        {
+            $flag = \Drupal\flag\Entity\Flagging::load($flagObj->id);
+            $status = $flag->field_status->getValue();
+            if(isset($status[0]['value']) && $status[0]['value'] == "Approved")
+            {
+                $all_event_flags[$flagObj->entity_id][$flagObj->uid] = $flagObj->uid; 
+            }
+        }
+
+        foreach($events_ids as $eventId)
+        {
+
+            $attendees_event[$eventId] = [];
+            //load event node
+            $node = \Drupal::entityTypeManager()->getStorage('node')->load($eventId);
+            $node_paragraphs = $node->get('field_add_new_session')->referencedEntities();
+
+            //added users
+            foreach($node_paragraphs as $np)
+            {
+                $at_ids = $np->field_attendee2->getValue();
+                foreach($at_ids as $at_id)
+                {
+                    $attendees_event[$eventId][$at_id['target_id']] = $at_id['target_id'];
+                }
+            }
+            //flags
+            if(isset($all_event_flags[$eventId]))
+            {
+                foreach($all_event_flags[$eventId] as $uid)
+                {
+                    $attendees_event[$eventId][$uid] = $uid;
+                }
+            }
+        }
+
+
+        $form['#attached']['drupalSettings']['event_attendees_list'] = $attendees_event;
+    }
+
+
+
+
+    /////site admin user edit form
+    if($form_id == "user_form"){
+        //        kint($form);
+        //        exit;
+        $user_id = \Drupal::routeMatch()->getRawParameter('user');
+        $account = \Drupal\user\Entity\User::load($user_id); // pass your uid
+        $name = $account->getUsername();
+
+        //        $selected_role = $account->roles->getValue()[0]['target_id'];
+        $selected_roles = $account->roles->getValue();
+        //        foreach($selected_roles as $selected_role)
+        //        {
+        //            $selected_role = $selected_role['target_id'];
+        //            kint($selected_role);
+        //        }
+        //        kint($selected_role);
+        //        exit;
+
+        $currentUser = \Drupal::currentUser();
+        $current_id = $currentUser->id();
+        //        exit;
+        $c_role = $currentUser->getAccount()->getRoles();
+        //        exit;
+        $currentRoles = $currentUser->getRoles();
+        $secondallRoles =\Drupal::entityTypeManager()->getStorage('user_role')->loadMultiple();
+
+        if(!in_array("siteadmin", $c_role)) {
+            $form['name']["#disabled"] = TRUE;
+            $form['status']["#disabled"] = TRUE;
+        }
+
+        if(!in_array("siteadmin", $c_role)) {
+            $form['#attributes']['class'][] = 'user_profile_edit_form';
+        }
+
+        if(in_array("siteadmin", $c_role)) {
+            $form['#attributes']['class'][] = 'siteadmin-user_profile_edit_form';
+        }
+
+        foreach ($secondallRoles as $role_id => $role) {
+            $all_roles[$role_id] = $role->label();
+        }
+        if(in_array("siteadmin", $c_role))
+        {
+            $form['select_roles'] = [
+                '#type' => 'select',
+                '#options' => $all_roles,
+                '#title' => t("Select Roles"),
+                '#multiple' => true,
+                '#weight' => 11,
+                '#required' => TRUE,
+                '#default_value' => array_column($selected_roles, 'target_id'),
+            ];
+
+        }
+
+        if(in_array("siteadmin", $c_role))
+        {
+
+            $form['#prefix'] = '<div class="col-md-12 custom-side-admin-form">';
+            $form['#suffix'] = '</div>';
+
+            $form['pass'] = array(
+                '#title' => 'Password',
+
+            );
+            ($form['field_full_name']['#weight']=1000000);
+            $form['fafff'] = array(
+                '#markup' => '.',
+                '#weight' => 1000,
+            );
+
+            ($form['field_speaker_related_info']['#attributes']['class'] ='alaka'); 
+
+            // kint($form); exit;
+            //            $form['field_full_name']['#attributes'] =array('class','col-md-6');
+            //          $form['field_full_name']['#attributes']['class'][] = 'col-md-6';
+            //          $form['name']['#attributes']['class'][] = 'col-md-6';
+            //          $form['mail']['#attributes']['class'][] = 'col-md-6';
+            //          $form['pass']['#attributes']['class'][] = 'col-md-6';
+            //          $form['status']['#attributes']['class'][] = 'col-md-6';
+            //          $form['select_roles']['#attributes']['class'][] = 'col-md-6';
+            //          $form['field_cnic_passport_check']['#attributes']['class'][] = 'col-md-6';
+            //          $form['field_cnic']['#attributes']['class'][] = 'col-md-6';
+            //          $form['field_passport2']['#attributes']['class'][] = 'col-md-6';
+            //          $form['field_contact_number2']['#attributes']['class'][] = 'col-md-6';
+            //          $form['user_picture']['#attributes']['class'][] = 'col-md-6';
+            //          $form['field_speaker_related_info']['#attributes']['class'][] = 'col-md-12';
+            //            
+            //            
+
+
+        }
+
+
+
+
+
+        // changed user status to select list
+        $form['status']['#type'] ='select';
+        $form['pass']['#type'] = 'password';
+        ($form['user_picture']);
+        ($form['select_roles']['#weight']=6); 
+
+        //        }
+
+
+
+        global $base_url;
+        $user_back = $base_url;
+        $user_register = $base_url.'/user/register1';
+
+
+
+        $form['actions']['submit']['#submit'][] ="adnan";
+        $form['actions']['submit']['#prefix'] = "<div class='col-md-6'>";
+        $form['actions']['submit']['#value'] = "UPDATE USER";
+        $form['actions']['submit']['#weight'] = 22;
+        $form['actions']['submit']['#suffix'] = "</div>";
+        $form['update_pass'] =[
+            '#markup' => '<div class="col-md-6 update-password-settings"><div class="btn btn-default update-password"><a href="https://115.186.58.50/boi-event-portal/user/'.$current_id.'/change-password">Update Password</a></div></div>',
+            '#weight' => 50,
+        ];
+
+        $form['preview'] = array(
+            '#markup' => '<div class="col-md-12 custom-profile-back-button"><div class="btn btn-default custom-back"><a href="'.$user_back.'">BACK</a></div></div>',
+            '#weight' => -11,
+        );
+
+        $form['#prefix'] = '<div class="my-form-wrapper">';
+        $form['#suffix'] = '</div>';
+
+
+    }
+
+
+    ///////// end edit site admin form
+
+    if($form_id == "user_register_form")
+    {
+
+
+        //        kint
+        //        ($form['field_fax_number']['widget'][0]['value']['#type'] ='textfield');
+        //        ($form['field_fax_number']['#attributes'] = array('type' => 'textfield'));
+        //        unset($form['field_fax_number']['widget']['#after_build']);
+        //        exit;
+
+        unset($form['field_cnic']['widget'][0]['value']['#maxlength']);
+        ($form['field_cnic']['#attributes'] = array('max' => '13'));
+        //        kint($form['field_cnic']); exit;
+
+
+        $form['field_cnic']['#attributes']['class'][] = 'mello';
+
+        //        exit;
+        $query = \Drupal::entityQuery('user');
+        $query->notExists('field_full_name');
+        $uids = $query->execute();
+        //        kint($uids);
+        foreach($uids as $uid){
+            $uu = \Drupal\user\Entity\User::load($uid);
+            $uu->field_full_name->setValue($uu->getUsername());
+            $uu->save();
+        }
+        //        exit;
+        ($form['field_cnic']['#attributes'] = array('class' => 'classname'));
+
+        ($form['mail']['#title']="Email");
+        ($form['mail']['#required'] = TRUE);
+        $currentUser = \Drupal::currentUser();
+        $currentRoles = $currentUser->getRoles();
+
+
+        if($currentUser->isAnonymous())
+        {
+            $form['name']['#access'] = false;
+            array_unshift($form['#validate'], 'myvalidation');
+
+        }
+
+        $path = \Drupal::service('path.current')->getPath();
+
+
+        if($path == "/user/register/siteadmin"){
+
+
+            if(in_array('siteadmin', $currentRoles)){
+                $form['#prefix'] = "<div class='col-md-12 custom-side-admin-form'>";
+
+                // To grant access to all users         
+
+                ($form['field_speaker_related_info']['#weight']= -21110);
+                $form['name']['#weight'] = -10;
+
+                $form['status']['#type'] ='select';
+                $form['status']['#required'] = TRUE;
+
+                $form['pass']['#type'] = 'password';
+
+                $form['pass']['#required'] = TRUE;
+
+                $roles = user_roles(true);
+                $all_roles = array();
+                unset($roles[DRUPAL_AUTHENTICATED_RID]);
+                //                unset($roles['administrator']);
+                foreach ($roles as $role_id => $role) {
+                    $all_roles[$role_id] = $role->label();
+
+                }
+
+                unset($all_roles["administrator"]); 
+                unset($all_roles["attandee"]); 
+
+                $form['select_roles'] = [
+                    '#type' => 'select',
+                    '#options' => $all_roles,
+                    '#title' => t("Select Roles"),
+                    '#multiple' => true,
+                    '#weight' => 6,
+                    '#required' => TRUE,
+
+                ];
+                $form['actions']['submit']['#value'] = "CREATE USER";
+                $form['actions']['submit']['#submit'][] = 'custom_hooks_register_set_roles';
+
+                ($form['pass']['#title'] ="Password");
+
+            }
+            else{
+                echo "You don't have permission to view .....";
+                exit;
+            }
+
+            $form['#suffix'] = '</div>'; 
+        }
+    }
+}
+
+function attendance_redirect_submit($form, &$form_state) {
+    $form_state->setRedirect('node.add', ['node_type'=>'attendance']);
+}
+
+function _modal_form_checklist_ajax_submit(array $form, FormStateInterface &$form_state) {
+    $response = new AjaxResponse();
+    $response->addCommand(new CloseModalDialogCommand());
+    $form_state->setResponse($response);
+}
+
+function my_submit_handler(&$form, &$form_state) {
+    exit;
+    $form_state['redirect'] = 'new-event-request';
+}
+
+
+function event_custom_submit(&$form, $form_state)
+{
+    global $base_url;
+    //*** sending email on sub organizer  ***//
+    $sub_ogranizer_id = $form_state->getValue('field_add_new_session')[0]['subform']['field_add_sub2'][0]['subform']['field_users'][0]['target_id'];
+    $event_name = $form_state->getValue('title')[0]['value'];
+    $node_id = $form_state->getValue('nid');
+
+
+    if(!empty($sub_ogranizer_id)){
+        $sub_organizer_email = \Drupal\user\Entity\User::load($sub_ogranizer_id)->getEmail();
+        $sub_organizer_event_id = \Drupal\user\Entity\User::load($sub_ogranizer_id)->uid->getValue();
+        $sub_organizer_event_id_value = $sub_organizer_event_id[0]['value'];
+
+        $node = \Drupal\node\Entity\Node::load(631);
+        $email_subject  = $node->title->getValue()[0]['value'];
+        $email_body  = $node->field_comments_if_any_->getValue()[0]['value'];
+
+        $params = [];
+        $params['subject'] = $email_subject;
+        $text = $email_body;
+        $params['body'][] = $text;
+        $params['body'][] = ('<p>'.$node_id.'E'.$sub_organizer_event_id_value.'</p>');
+        $params['body'][] = ('<p><img src="http://115.186.58.50/boi-event-portal/image-qr-generate/'.$node_id.'E'.$sub_organizer_event_id_value.'" SUB/></p>');
+
+
+        $mail =  customMailSend($sub_organizer_email, $params);  
+    }
+    //get email from event focal person
+    $focal_person_event_id = $form['field_user']['widget']['#value'];
+
+    if(!empty($focal_person_event_id)){
+
+        $focal_personmain = \Drupal::service('entity_type.manager')->getStorage('user')->load($focal_person_event_id);
+        $focal_person_id = $focal_personmain->uid->getValue();
+        //        kint($focal_person_id[0]['value']);
+        $focal_person_id_value = $focal_person_id[0]['value'];
+        //        kint($focal_person_id_value);
+        //        exit;
+
+        $focal_person_event_email = $focal_personmain->getEmail();
+
+        $focal_person_event_name = $focal_personmain->getDisplayName();
+        $node = \Drupal\node\Entity\Node::load(629);
+        $email_subject  = $node->title->getValue()[0]['value'];
+        $email_body  = $node->field_comments_if_any_->getValue()[0]['value'];
+
+
+        $params = [];
+        $params['subject'] = $email_subject;
+        $text = $email_body;
+        $params['body'][] = $text;
+        $params['body'][] = ('<p>'.$node_id.'E'.$focal_person_id_value.'</p>');
+        $params['body'][] = ('<p><img src="http://115.186.58.50/boi-event-portal/image-qr-generate/'.$node_id.'E'.$focal_person_id_value.'"/></p>');
+        $mail =  customMailSend($focal_person_event_email, $params);  
+    }
+    //  ** focal person session email **//
+    $session_focal_id = $form_state->getValue('field_add_new_session')[0]['subform']['field_focal_person'][0]['target_id'];
+    if(!empty($session_focal_id)){
+
+
+        $event_session_focal_email = \Drupal\user\Entity\User::load($session_focal_id)->getEmail();
+        $event_session_focal_name = \Drupal\user\Entity\User::load($session_focal_id)->getDisplayName();
+        $event_session_focal_id = \Drupal\user\Entity\User::load($session_focal_id)->uid->getValue();
+        $event_session_focal_id_value = $event_session_focal_id[0]['value'];
+
+        $node = \Drupal\node\Entity\Node::load(629);
+        $email_subject  = $node->title->getValue()[0]['value'];
+        $email_body  = $node->field_comments_if_any_->getValue()[0]['value'];
+
+        $params['subject'] = $email_subject;
+        $text = $email_body;
+        $params['body'][] = $text;
+        $params['body'][] = ('<p><img src="http://115.186.58.50/boi-event-portal/image-qr-generate/'.$node_id.'%2C'.$event_session_focal_id_value.'"/></p>');
+        $mail =  customMailSend($event_session_focal_email, $params);  
+    }
+
+    //when checklist inserted on event for checklist will be unpublish
+    $checklist_unpublish_id = $form_state->getValue('field_add_new_session')[0]['subform']['field_add_sub2'][0]['subform']['field_checklist'][0]['target_id'];
+
+    if($checklist_unpublish_id){
+        $node = \Drupal\node\Entity\Node::load($checklist_unpublish_id);
+        $node->setPublished(FALSE);
+        $node->save();
+
+    }
+    $ab = $form_state->getValue("field_add_new_session")[0];
+    //Chair Person sending email template
+    $chair_person_new = $ab['subform']['field_chair_person_new'][0]['target_id'];     
+    if(!empty($chair_person_new))
+    {
+        $chair_new_email = \Drupal\user\Entity\User::load($chair_person_new)->getEmail();
+        $chair_new_name = \Drupal\user\Entity\User::load($chair_person_new)->getDisplayName();
+        $chair_new_id = \Drupal\user\Entity\User::load($chair_person_new)->uid->getValue();
+        $chair_new_id_value = $chair_new_id[0]['value'];
+
+        $node = \Drupal\node\Entity\Node::load(628);
+        $email_subject  = $node->title->getValue()[0]['value'];
+        $email_body  = $node->field_comments_if_any_->getValue()[0]['value'];
+
+        $params = [];
+        $params['subject'] = $email_subject;
+        $text = $email_body;
+        $params['body'][] = $text;
+        $params['body'][] = ('<p>'.$node_id.'E'.$chair_new_id_value.'</p>');
+        $params['body'][] = ('<p><img src="http://115.186.58.50/boi-event-portal/image-qr-generate/'.$node_id.'E'.$chair_new_id_value.'"/></p>');
+        $mail =  customMailSend($chair_new_email, $params); 
+    }
+    // chair person email templating
+
+
+    //Speaker email template sending 
+    $chair_person = $ab['subform']['field_chair_person2'][0]['subform']['field_users'][0]['target_id']; 
+    if(!empty($chair_person))
+    {
+        $chair_email = \Drupal\user\Entity\User::load($chair_person)->getEmail();
+        $chair_name = \Drupal\user\Entity\User::load($chair_person)->getDisplayName();
+        $chair_id = \Drupal\user\Entity\User::load($chair_person)->uid->getValue();
+        $chair_id_value = $chair_id[0]['value'];
+        $node = \Drupal\node\Entity\Node::load(630);
+        $email_subject  = $node->title->getValue()[0]['value'];
+        //    kint($email_subject); exit;
+        $email_body  = $node->field_comments_if_any_->getValue()[0]['value'];
+
+        $params = [];
+        $params['subject'] = $email_subject;
+        $text = $email_body;
+        $params['body'][] = $text;
+        $params['body'][] = ('<p><img src="http://115.186.58.50/boi-event-portal/image-qr-generate/'.$node_id.'E'.$chair_id_value.'"/></p>');
+
+
+        $mail =  customMailSend($chair_email, $params); 
+    }
+
+    $attendeId =  $ab['subform']['field_attendee2'][0]['target_id'];
+
+    if(!empty($attendeId))
+    {
+        $attendee_email = \Drupal\user\Entity\User::load($attendeId)->getEmail();
+        $attendee_name = \Drupal\user\Entity\User::load($attendeId)->getDisplayName();
+        $attendee_id = \Drupal\user\Entity\User::load($attendeId)->uid->getValue();
+        $attendee_id_value = $attendee_id[0]['value'];
+
+        $uid = \Drupal\Core\Entity\Element\EntityAutocomplete::extractEntityIdFromAutocompleteInput($rawUser);
+        if(!empty($attendeId)){
+            $node = \Drupal\node\Entity\Node::load(627);
+            $email_subject  = $node->title->getValue()[0]['value'];
+            $email_body  = $node->field_comments_if_any_->getValue()[0]['value'];
+//kint($email_subject);
+//kint($attendee_email); exit;
+            $params = [];
+            $params['subject'] = $email_subject;
+            $text = $email_body;
+            $params['body'][] = $text;
+            $params['body'][] = ('<p>Your attendance code is '.$node_id.'E'.$attendee_id_value.'</p>');
+            $params['body'][] = ('<p><img src="http://115.186.58.50/boi-event-portal/image-qr-generate/'.$node_id.'E'.$attendee_id_value.'"/></p>');
+
+            $mail =  customMailSend($attendee_email, $params);
+        }
+    }
+}
+
+function login_form_handler(&$form, FormStateInterface $form_state){
+
+    $name = $form_state->getValue("name");
+    $user = user_load_by_name($name);
+    $user = $user ?$user:user_load_by_mail($name);
+    if($user == False){
+        $form_state->setRedirect('user.register');	
+    }else{
+        //        $pass = $form_state->getValue("pass");
+        //        kint($pass);
+        //        exit;
+
+
+        $login_id = $user->id();
+        $user = User::load($login_id);
+        $roless = $user->getRoles(); 
+
+
+        //kint($roless); exit;
+
+
+        $form_state->set('loadedUser', $user);
+        $form_state->set("submitedOnce", true);
+        $form_state->setRebuild();
+
+        if(in_array('attandee',$roless)){
+
+            //            user_login_finalize($user);
+            //            $response = new RedirectResponse('events');
+            //
+            //            $response->send();
+            //            return $response;
+        }
+        //        kint("out"); exit;
+
+
+
+    }
+
+}
+
+
+function custom_hooks_user_login($account) {
+
+    $current_user = \Drupal::currentUser();
+    $roless = $current_user->getRoles();
+    if(in_array('attandee',$roless)){
+        $response = new RedirectResponse('/boi-event-portal/events');
+        $response->send();
+        return $response;
+    } 
+    if(in_array('siteadmin',$roless)){
+        $response = new RedirectResponse('/boi-event-portal/dashboard');
+        $response->send();
+        return $response;
+    }
+    if(in_array('sub_organizer',$roless)){
+        $response = new RedirectResponse('/boi-event-portal/assigned-events-organizer');
+        $response->send();
+        return $response;
+    }
+
+}
+function custom_hooks_register_set_roles(&$form, $form_state)
+{
+
+
+    if($_GET['_wrapper_format'] == 'drupal_ajax')  
+    {
+
+        //        echo '[{"command":"closeDialog","selector":"#drupal-modal","persist":false}, {"command":"invoke","selector":null,"method":"donothing","args":["click"]}]'; 
+        echo '[{"command":"closeDialog","selector":"#drupal-modal","persist":false}, {"command":"invoke","selector":".node-new-event-form input , .node-new-event-form select , .node-new-event-form textarea","method":"removeAttr","args":["required"]}, {"command":"invoke","selector":"#edit-donothing","method":"trigger","args":["click"]}]'; 
+        exit;
+        return $response;
+    }
+
+    //    $node = \Drupal\node\Entity\Node::load(619);
+    //    kint($node);
+    //    exit;
+    //    $entity_type_id = 'new_template';
+    //    $nids = db_select('node', 'n')
+    //        ->fields('n', array('nid'))
+    //        ->condition('n.nid', '619', '=')
+    ////        ->condition('type', 'new_template', '=')
+    //        ->execute()
+    //        ->fetchCol();
+
+    // Get all of the article nodes.
+    //    $nodes = node_load_multiple($nids);
+    //    kint($nodes); exit;
+
+
+
+    //    $rlsss =  $form_state->select_roles->getValue();
+    $select_admin_user_role = $form_state->getValue('select_roles');
+
+    $name = $form_state->getValue('name');
+    $user = user_load_by_name($name);
+    $email = $user->getEmail();
+
+    if(in_array('sub_organizer', $select_admin_user_role)){
+        //load mail template node
+        $node_sub = \Drupal\node\Entity\Node::load(631);
+        $email_subject_sub  = $node_sub->title->getValue()[0]['value'];
+        $email_body_sub  = $node_sub->field_comments_if_any_->getValue()[0]['value'];
+
+        if($email){
+
+            $params = [];
+            $params['subject'] = $email_subject_sub;
+            $text = $email_body_sub;
+            $params['body'][] = $text;
+            //    $text = t('Registered');
+            //    $params['body'][] = $text;
+
+            $mail =  customMailSend($email, $params);
+        }
+    } 
+    if(in_array('Attandee', $select_admin_user_role)){
+        //load mail template node
+        $node_attendee = \Drupal\node\Entity\Node::load(626);
+        $email_subject_attendee  = $node_attendee->title->getValue()[0]['value'];
+        $email_body_attendee = $node_attendee->field_comments_if_any_->getValue()[0]['value'];
+
+        if($email){
+
+            $params = [];
+            $params['subject'] = $email_subject_attendee;
+            $text = $email_body_attendee;
+            $params['body'][] = $text;
+            //    $text = t('Registered');
+            //    $params['body'][] = $text;
+
+            $mail =  customMailSend($email, $params);
+        }
+    }
+
+    if(in_array('focal_person', $select_admin_user_role)){
+        //load mail template node
+        $node_attendee = \Drupal\node\Entity\Node::load(622);
+        $email_subject_attendee  = $node_attendee->title->getValue()[0]['value'];
+        $email_body_attendee = $node_attendee->field_comments_if_any_->getValue()[0]['value'];
+
+        if($email){
+
+            $params = [];
+            $params['subject'] = $email_subject_attendee;
+            $text = $email_body_attendee;
+            $params['body'][] = $text;
+            //    $text = t('Registered');
+            //    $params['body'][] = $text;
+
+            $mail =  customMailSend($email, $params);
+        }
+    }    
+    if(in_array('chair_person', $select_admin_user_role)){
+        //load mail template node
+        $node_attendee = \Drupal\node\Entity\Node::load(1052);
+        $email_subject_attendee  = $node_attendee->title->getValue()[0]['value'];
+        $email_body_attendee = $node_attendee->field_comments_if_any_->getValue()[0]['value'];
+
+        if($email){
+
+            $params = [];
+            $params['subject'] = $email_subject_attendee;
+            $text = $email_body_attendee;
+            $params['body'][] = $text;
+            //    $text = t('Registered');
+            //    $params['body'][] = $text;
+
+            $mail =  customMailSend($email, $params);
+        }
+    } 
+    if(in_array('speaker', $select_admin_user_role)){
+        //load mail template node
+        $node_attendee = \Drupal\node\Entity\Node::load(625);
+        $email_subject_attendee  = $node_attendee->title->getValue()[0]['value'];
+        $email_body_attendee = $node_attendee->field_comments_if_any_->getValue()[0]['value'];
+
+        if($email){
+
+            $params = [];
+            $params['subject'] = $email_subject_attendee;
+            $text = $email_body_attendee;
+            $params['body'][] = $text;
+            //    $text = t('Registered');
+            //    $params['body'][] = $text;
+
+            $mail =  customMailSend($email, $params);
+        }
+    }
+
+
+    //                kint($is_live);
+    //                kint($form_state);
+    //                exit;
+
+    //       $name = $form_state->getValue('name');
+    //       $user = user_load_by_name($name);
+    //       $email = $user->getEmail();
+
+    //load mail template node
+    //                $node = \Drupal\node\Entity\Node::load(626);
+    //                $email_subject  = $node->title->getValue()[0]['value'];
+    //                $email_body  = $node->field_comments_if_any_->getValue()[0]['value'];
+    //
+    //                if($email){
+    //
+    //                    $params = [];
+    //                    $params['subject'] = $email_subject;
+    //                    $text = $email_body;
+    //                    $params['body'][] = $text;
+    //                    //    $text = t('Registered');
+    //                    //    $params['body'][] = $text;
+    //
+    //                    $mail =  customMailSend($email, $params);
+    //                }
+
+    //    $user->save();
+
+    // we redirect to an external site
+    global $base_url;
+    $url1 = $base_url.'/user/login'; 
+    $url2 = $base_url.'/congratulations';
+    $url_pass_reset = $base_url.'/user/password';
+    $url_all_users = $base_url.'/all-users2';
+
+
+
+    $roles = $form_state->getValue('select_roles');
+    if($form_state->get('isAnonymous')){
+        $roles['attandee'] = 'attandee';
+    }
+    $user->removeRole('siteadmin');
+    foreach($roles as $rid=>$value){
+        if($value !== 0){
+            $user->addRole($rid);
+        } 
+    }
+    $user->save();
+
+
+
+    if($form_state->get('isAnonymous')){
+        $response = new RedirectResponse($url2);
+        $response->send();
+        return $response;
+    }
+    elseif($url1){
+        $response = new RedirectResponse($base_url.'/all-users2');
+
+        $response->send();
+        return $response;
+    }
+
+
+    return;
+
+
+}
+
+function custom_hooks_form_user_register_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
+
+    if(isset($_GET['_wrapper_format']) && $_GET['_wrapper_format'] == 'drupal_modal')
+    {
+        $form['actions']['submit']['#ajax'] = [
+            'callback' => 'hideModalFunction'
+        ];
+
+        $form['actions']['submit']['#value'] = 'SAVE';
+    }else{
+        $form['#validate'][] = 'customvalidatefn';
+        $form['actions']['submit']['#submit'][] = 'custom_hooks_register_set_roles';
+        if(in_array('anonymous', \Drupal::currentUser()->getRoles()) )
+        {
+
+            $form_state->set("isAnonymous", true);
+        }
+    }
+
+
+}
+
+
+function customvalidatefn($form, \Drupal\Core\Form\FormStateInterface $form_state){
+
+    if($_SESSION['otp']['verified'] != true  || $form_state->getValue('mail') !== $_SESSION['otp']['mail']){
+        //        $form_state->setError($form, "OTP NOT VERIFIED");
+    }
+}
+
+
+function mycustomfunctiont(&$form, $form_state)
+{
+    echo 'sorry';
+    exit;
+}
+
+
+function custom_hooks_options_list_alter(array &$options, array $context) {
+    unset($options['_none']);
+}
+
+function custom_hooks_views_pre_render(ViewExecutable $view) {
+    //    $viewDisplay = $view->getDisplay();
+    //    $viewDisplay = $viewDisplay->display['id'];
+    //    if($view->id() == 'checklist' && $viewDisplay == 'entity_reference_1'){
+    //        
+    //        $results = $view->result;
+    ////        $view->result = [];
+    ////        kint($view->result);
+    ////        foreach ($results as $result) {
+    //            
+    //            
+    ////            \Drupal::logger('myview')->notice('<pre>'.print_r($result,TRUE).'</pre>');
+    //            // What code should I write here?
+    ////        }    
+    //    }
+}
+
+/**
+ * Implements hook_views_pre_render().
+ */
+function custom_hooks_views_query_alter(ViewExecutable $view, QueryPluginBase $query) {
+
+    $viewDisplay = $view->getDisplay();
+    $viewDisplay = $viewDisplay->display['id'];
+    $token_service = \Drupal::token();
+
+    $substi = [];
+    if(isset($view->build_info['substitutions'])){
+        foreach($view->build_info['substitutions'] as $key=>$value)
+        {
+            $substi[str_replace(["{{ ", " }}"], ["[", "]"], $key)] = $value;
+        }
+    }
+
+
+    foreach($query->where as $wK=>$whereGroup){
+        foreach($query->where[$wK]['conditions'] as &$cond)
+        {
+            if(is_string($cond['value']) && strlen($cond['value']) > 0){
+                if(isset($cond['value']) && $cond['value'][strlen($cond['value'])-1] == "]"  && $cond['value'][0] == "[" ){
+                    //                kint($cond['value']);
+                    //code for contextual filters
+                    if(strpos($cond['value'], "raw_arguments") === 1)
+                    {
+                        if(isset($substi[$cond['value']]))
+                        {
+                            $cond['value'] = $substi[$cond['value']];
+                        }
+                    }else{
+                        $cond['value'] = $token_service->replace($cond['value']);
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+
+/**
+ * Implements hook_user_logout().
+ */
+function custom_hooks_user_logout() {
+    // we redirect to an external site
+    global $base_url;
+    //    kint($base_url.'/user/login'); exit;
+    $response = new RedirectResponse($base_url.'/user/login');
+    $response->send();
+    return $response;
+}
+
+function custom_hooks_node_update($node){
+
+    $orig = $node->original;
+    $bundle_type = $node->bundle();
+    if($bundle_type=="new_event")
+    {
+        $statusOrig = $orig->status->getValue()[0]['value'];
+        $statusNew = $node->status->getValue()[0]['value'];
+
+        //unpublish
+        if($statusOrig == 1 && $statusNew==0)
+        {
+
+            $nid = $node->id();
+
+            $node = \Drupal\node\Entity\Node::load($nid);
+            $all_paragraph = $node->field_add_new_session->referencedEntities();
+
+
+            $title  = $node->getTitle();
+
+
+            //        Event focal person
+            $event_focal_id = $node->field_user->getValue()[0]['target_id'];
+
+            if(!empty($event_focal_id)){
+                $event_focal_email = \Drupal\user\Entity\User::load($event_focal_id)->getEmail();
+                $email_templete_id = \Drupal\node\Entity\Node::load(925);
+                $email_subject  = $email_templete_id->title->getValue()[0]['value'];
+                $email_body  = $email_templete_id->field_comments_if_any_->getValue()[0]['value'];
+
+                $params = [];
+                $params['subject'] = $email_subject;
+                $text = $email_body;
+                $params['body'][] = ("<h3>Event $title has been postponed </h3>");
+                //            $params['body'][] = $title;
+                $params['body'][] = $email_body;
+
+
+                $mail =  customMailSend($event_focal_email, $params);
+
+            } 
+
+            //      event focal person end
+
+            $session_focal_p_id = $all_paragraph[0]->field_focal_person->referencedEntities()[0]->id();
+
+            if(!empty($session_focal_p_id)){
+                $session_focal_p_email = $all_paragraph[0]->field_focal_person->referencedEntities()[0]->getEmail();
+                $email_templete_session_f_id = \Drupal\node\Entity\Node::load(925);
+                $email_subject  = $email_templete_session_f_id->title->getValue()[0]['value'];
+                $email_body  = $email_templete_session_f_id->field_comments_if_any_->getValue()[0]['value'];
+
+                $params = [];
+                $params['subject'] = $email_subject;
+                $text = $email_body;
+                $params['body'][] = ("<h3>Event $title has been postponed </h3>");
+                $params['body'][] = $email_body;
+                $mail =  customMailSend($session_focal_p_email, $params);
+
+            }
+
+
+
+
+            //        kint($all_paragraph[0]->field_chair_person_new->referencedEntities()[0]->getEmail());
+            $chair_person = $all_paragraph[0]->field_chair_person2->referencedEntities()[0]->field_users->getValue()[0]['target_id'];
+
+
+
+            //        speaker
+            $session_speaker_id = $all_paragraph[0]->field_speakers->referencedEntities()[0]->field_email_ref->getValue()[0]['target_id'];
+            if(!empty($session_speaker_id)){
+                $speaker_email = \Drupal\user\Entity\User::load($session_speaker_id)->getEmail();
+                $email_templete_speaker_id = \Drupal\node\Entity\Node::load(926);
+                $email_subject  = $email_templete_speaker_id->title->getValue()[0]['value'];
+                $email_body  = $email_templete_speaker_id->field_comments_if_any_->getValue()[0]['value'];
+
+                $params = [];
+                $params['subject'] = $email_subject;
+                $text = $email_body;
+                $params['body'][] = ("<h3>Event $title has been postponed </h3>");
+                $params['body'][] = $email_body;
+                //            $mail =  customMailSend($speaker_email, $params);
+
+            }
+
+            //        speaker end
+
+
+            $attendee = $all_paragraph[0]->field_attendee2;
+
+
+
+
+            //sub oragnizer email
+            $sub_organizers_id = $all_paragraph[0]->field_add_sub2->referencedEntities()[0]->field_users->getValue()[0]['target_id'];
+
+            if(!empty($sub_organizers_id)){
+                $sub_org_email = \Drupal\user\Entity\User::load($sub_organizers_id)->getEmail();
+                $email_templete_sub_org_id = \Drupal\node\Entity\Node::load(926);
+                $email_subject  = $email_templete_sub_org_id->title->getValue()[0]['value'];
+                $email_body  = $email_templete_sub_org_id->field_comments_if_any_->getValue()[0]['value'];
+
+                $params = [];
+                $params['subject'] = $email_subject;
+                $text = $email_body;
+                $params['body'][] = ("<h3>Event $title has been postponed </h3>");
+                $params['body'][] = $email_body;
+                $mail =  customMailSend($sub_org_email, $params);
+
+            }
+            //        sub org end
+
+
+
+            $person_id = $all_paragraph[0]->field_chair_person_new->referencedEntities()[0]->id();
+
+            if(!empty($person_id)){
+                $email_templete_chair_id = \Drupal\node\Entity\Node::load(927);
+                $email_subject  = $email_templete_chair_id->title->getValue()[0]['value'];
+                $email_body  = $email_templete_chair_id->field_comments_if_any_->getValue()[0]['value'];
+
+                $chair_persons = $all_paragraph[0]->field_chair_person_new->referencedEntities();
+                $chair_P_mails = [];
+                foreach($chair_persons as $chair_persons)
+                {
+                    $chair_P_mails[] = $chair_persons->getEmail();
+                }
+
+                $chair_person_mails =  implode(", ", $chair_P_mails);   
+                $params = [];
+                $params['subject'] = $email_subject;
+                $text = $email_body;
+                $params['body'][] = ("<h3>Event $title has been postponed </h3>");
+                $params['body'][] = $email_body;
+                $mail =  customMailSend($chair_person_mails, $params);
+
+
+
+            }
+
+
+
+            $attendee_id = $all_paragraph[0]->field_attendee2->referencedEntities()[0]->id();
+            if(!empty($attendee_id)){
+
+                $email_templete_attende_id = \Drupal\node\Entity\Node::load(928);
+                $email_subject  = $email_templete_attende_id->title->getValue()[0]['value'];
+                $email_body  = $email_templete_attende_id->field_comments_if_any_->getValue()[0]['value'];
+
+
+                $attendee1 = $all_paragraph[0]->field_attendee2->referencedEntities();
+                $attendee_mails = [];
+                foreach($attendee1 as $attendes)
+                {
+                    $attendee_mails[] = $attendes->getEmail();
+                }
+
+                $attendees_mails =  implode(", ", $attendee_mails);
+                $params = [];
+                $params['subject'] = $email_subject;
+                $text = $email_body;
+                $params['body'][] = ("<h3>Event $title has been postponed </h3>");
+                $params['body'][] = $email_body;
+                $mail =  customMailSend($attendees_mails , $params);
+            }
+
+        }
+
+
+    }
+
+}
+
+function myvalidation(&$form, \Drupal\Core\Form\FormStateInterface $form_state)
+{
+
+
+    $username = $form_state->getValue('mail');
+    $firstname = $form_state->getValue('field_first_name')[0]['value'];
+    $lastname = $form_state->getValue('field_last_name')[0]['value'];
+    //    kint($form_state->getValue('field_first_name')[0]['value']);
+    //    exit;
+    $fullname = $firstname.' '.$lastname;
+    //    kint($username);
+    $username = preg_replace(['/(.+?)@(.+?)\.com/i'], '$1', $username);
+    $origUsername = $username;
+    $count = 0;
+    while(user_load_by_name($username) != false)
+    {
+        $count++;
+        $username = $origUsername.'_'.$count;
+
+    }
+    $form_state->setValue('name', $username);
+    $form_state->setValue('field_full_name', $fullname);
+}
+
+function custom_hooks_page_attachments_alter(array &$attachments) {
+
+    //    kint($attachments); exit;
+}
+
+
+function custom_hooks_page_attachments(array &$attachments) {
+    $path = $current_path = \Drupal::service('path.current')->getPath();
+    $url_user_id = \Drupal::routeMatch()->getRawParameter('user');    
+    $path_user_edit = "/user/$url_user_id/edit";
+    $path_role = \Drupal::request()->getpathInfo();
+    $arg  = explode('/',$path_role);
+
+    $get_edit_role_url = $arg[2];
+    $attendee_pdf = "/new-event-request/$get_edit_role_url";
+
+    $role_edit_path = "/role/$get_edit_role_url/edit";
+    $event_node_edit = "/node/$get_edit_role_url/edit";
+    $attende_request = "/event-request/".$get_edit_role_url;
+    $attende_request_new = "/new-event-request/".$get_edit_role_url;
+    $checklist_clone ="/clone/$get_edit_role_url/quick_clone";
+    $checklist_details ="/Checklist-view-details/$get_edit_role_url";
+    $checklist_task ="/task_for_siteadmin/$get_edit_role_url";
+    $organiser_search ="/assigned-events-organizer";
+    $archive_events ="/archived-attendee-events";
+
+    if($path == $archive_events){
+        $attachments['#attached']['library'][] = 'custom_hooks/customhooks_data_table';
+    }
+
+    if($path =='/node/add/group' || 
+       $path ==$organiser_search || 
+       $path =='/cancelled-events'|| 
+       $path =='/closed_events' ||
+       $path =='/postponed-events' ||
+       $path =='/attendance-reports' ||
+       $path =="/past-events"  ||
+       $path =="/form/new_attachments" ||
+       $path =="/user/password" ||
+       $path =="/node/add/new_template"  ||
+       $path =="/events" || 
+       ($path == $attende_request_new) ||
+       ($path == $checklist_clone) || 
+       ($path == $checklist_details) || 
+       ($path == $checklist_task))
+    {
+        $attachments['#attached']['library'][] = 'custom_hooks/customhooks_data_table';
+
+
+    }
+
+
+    if(($path =='/all-role') ||($path =='/upcoming-events') || ($path =='/my-requests') || ($path =='/welcome-sub-organizer') || ($path =='/checklist') ||   ($path=='/all-events') || ($path=='/only-groups') || ($path=='/all-users2') || ($path=='/registered-users')|| ($path=='/user/login')|| ($path=='/user/register') || ($path=='/user/register/siteadmin')|| ($path=='/node/add/new_event') || ($path=='/role') || ($path=='/node/add/attendance') || ($path=='/attendance-history') || ($path=='/node/add/attachments') || ($path=='/event-request2')
+       || ($path == $path_user_edit) || ($path == $role_edit_path) || ($path == $attende_request) || ($path == $event_node_edit))
+    {
+        $attachments['#attached']['library'][] = 'custom_hooks/customhooks_data_table';
+    } 
+
+
+    if($path =='/attendance-history')
+    {
+        $attachments['#attached']['library'][] = 'custom_hooks/lider_lib';
+
+    }
+
+    if($path ==$attendee_pdf){
+        $attachments['#attached']['library'][] = 'custom_hooks/customhooks_pdf';
+    }
+
+
+
+}
+
+
+
+function attendee_comment($form, &$form_state) {
+    global $base_url;
+    $current_user = \Drupal::currentUser();
+    $roles = $current_user->getRoles();
+    $current_path = \Drupal::service('path.current')->getPath();
+
+
+    $node_path = explode('/', ($current_path));
+    $nid = $node_path[4];
+    $url ="$base_url/new-event-request/$nid";
+    $response = new Symfony\Component\HttpFoundation\RedirectResponse($url); 
+    $response->send();
+    return;
+
+}
+
+function custom_hooks_form_comment_form_alter(&$form, &$form_state, $form_id) {
+//    kint($form_id); exit;
+    $current_user = \Drupal::currentUser();
+    $roles = $current_user->getRoles();
+    if (in_array("attandee", $roles)){
+        $form['actions']['submit']['#submit'][] = 'attendee_comment';
+    }
+}
+
+

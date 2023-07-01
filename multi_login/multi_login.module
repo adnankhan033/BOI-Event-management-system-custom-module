@@ -1,0 +1,139 @@
+<?php
+
+/**
+ * @file
+ * Contains multi_login.module.
+ */
+
+use \Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Ajax\AjaxResponse;
+
+
+function multi_login_form_alter(&$form, FormStateInterface $form_state, $form_id)
+{
+    
+    
+    //    if($form_id == "node_article_edit_form")
+    //    {
+    //        $view = \Drupal\views\Views::getView('parara_tera_test');
+    //        //$view->setArguments($args);
+    //        $view->setDisplay('entity_reference_1');
+    //        $view->execute();
+    //
+    //        // Get the results of the view.
+    //        $view_result = $view->result;
+    //        kint($view_result);
+    //        exit;
+    //
+    //        //get paragraphs
+    //        $nid = $form_state->getformObject()->getEntity()->id();
+    //        $node = \Drupal\node\Entity\Node::load($nid);
+    //        $node->field_ff->setValue([$view_result[0]->_entity, $view_result[6]->_entity]);
+    //        $node->save();
+    //        //        kint($node);
+    //        //        $node->set("");
+    //    }
+
+
+    if($form_id == 'user_login_form'){
+//                kint($form);
+        if($form_state->get("submitedOnce"))
+        {
+            global $base_url;
+
+            $form['actions']['submit']['#value'] = t('Login');
+            unset($form['actions']['submit']['#submit']);
+            $form['actions']['submit']['#submit'][] = 'otp_handler';
+
+        }else{
+
+            $form_state->set('oldInfoPass', $form['pass']);
+            kint("fasd");
+            $form_state->set('oldInfoSubmit', $form['#submit']);
+            $form_state->set('oldInfoValidate', $form['#validate']);
+            unset($form['pass']);
+
+
+            unset($form['#validate']);
+
+            $form['actions']['submit']['#value'] = t('Next');
+            $form['actions']['submit']['#submit'][] = 'login_form_handler';
+        }
+
+    }
+}
+function login_form_handler(&$form, FormStateInterface $form_state){
+    //    user login steps 
+
+    $name = $form_state->getValue("name");
+    $user = user_load_by_name($name);
+    if($user == False){
+        $form_state->setRedirect('user.register');	
+    }else{
+        $form_state->set("submitedOnce", true);
+        $form_state->setRebuild();
+    }
+    
+//        kint($user); exit;
+}
+function otp_handler(&$form, FormStateInterface $form_state){
+    
+    
+    //    kint($form_state);exit;
+    global $user;
+    $otp = $num = str_pad(rand(0,9999),4,'0',STR_PAD_LEFT);
+    $session = \Drupal::request()->getSession();
+    /**** SET SESSION ****/
+    $session->set('otp', 1234);
+    //echo "<pre>"; print_r($session->get('otp'));exit;
+    $name = $form_state->getValue("name");
+    $user = user_load_by_name($name);
+    $session->set('session-name', $name);
+    $email = $user->getEmail();
+    $id = $user->id();
+    $session->set('login-id', $id);
+    $session->set('login-email', $email);
+    //kint($Id); exit;
+    $arr = array('name' => $name, 'email' => $email, 'otp' => $otp);
+    //sendEmail($name,$email,$otp);
+    sendEmail($arr, 'user_login_opt');
+    $form_state->setRedirect('multi_login.otp');
+    //$submit_message = "Note Edited Successfully";
+    //drupal_set_message($submit_message);
+    //$form_state->setRebuild(TRUE);
+}
+function sendEmail($arr, $type){
+    switch ($type) {
+        case 'user_login_opt':
+            $username = $arr['name'];
+            $email = $arr['email'];
+            $otp = $arr['otp'];
+            $mailManager = \Drupal::service('plugin.manager.mail');
+            $module = 'multi_login';
+            $key = 'sending_email_to_user';
+            $to = $email;
+            $text = t('Dear "'.$username.'" Please use the OTP to Login the website"'.$otp.'"');
+            $params['message'] = $text;
+            $params['subject'] = 'Event Management Portal | One Time Password (OTP) for Login';
+            $params['headers'] = 'text/html';
+            //$langcode = \Drupal::currentUser()->getPreferredLangcode();
+            $send = true;
+            $result = $mailManager->mail($module, $key, $to, $params, NULL, $send);
+            break;
+    }
+
+}
+/**
+* Implements hook_mail().
+*/
+
+function otp_mail($key, &$message, $params) {
+
+    switch ($key) {
+        case 'sending_email_to_user':
+            $message['from'] = \Drupal::config('system.site')->get('mail');
+            $message['subject'] = t('@title', array('@title' => $params['subject']));
+            $message['body'][] = $params['message'];
+            break;
+    }
+}

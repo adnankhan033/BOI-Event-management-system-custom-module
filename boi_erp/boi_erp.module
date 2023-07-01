@@ -1,0 +1,33 @@
+<?php
+
+/**
+ * @file
+ * Contains boi_erp.module.
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+
+/**
+ * Implements hook_help().
+ */
+function boi_erp_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    // Main module help for the boi_erp module.
+    case 'help.page.boi_erp':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('Custom Module Role Permission') . '</p>';
+      return $output;
+
+    default:
+  }
+}
+
+
+function boi_erp_element_info_alter(array &$types) {
+    
+//  if (isset($types['table'])) {
+    $types['#attached']['library'][] = 'boi_erp/lider_lib';
+//  }
+}
+

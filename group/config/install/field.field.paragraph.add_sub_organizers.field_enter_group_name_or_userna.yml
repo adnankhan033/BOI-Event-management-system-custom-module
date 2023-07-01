@@ -1,0 +1,24 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.paragraph.field_enter_group_name_or_userna
+    - paragraphs.paragraphs_type.add_sub_organizers
+id: paragraph.add_sub_organizers.field_enter_group_name_or_userna
+field_name: field_enter_group_name_or_userna
+entity_type: paragraph
+bundle: add_sub_organizers
+label: 'Enter Group Name or Username'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: group_users
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

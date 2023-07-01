@@ -1,0 +1,13 @@
+{
+    "name": "custom_hooks",
+    "type": "drupal-module",
+    "description": "My Awesome Module",
+    "keywords": [
+    ],
+    "homepage": "https://www.drupal.org/project/custom_hooks",
+    "minimum-stability": "dev",
+    "support": {
+        "issues": "https://www.drupal.org/project/issues/custom_hooks",
+        "source": "http://cgit.drupalcode.org/custom_hooks",
+    },
+}

@@ -1,0 +1,8 @@
+
+customsteps.custom_steps_controller_CustomSteps:
+  path: '/customsteps'
+  defaults:
+    _controller: '\Drupal\customsteps\Controller\CustomStepsController::CustomSteps'
+    _title: 'CustomSteps'
+  requirements:
+    _permission: 'access content'

@@ -1,0 +1,13 @@
+{
+    "name": "custommail",
+    "type": "drupal-module",
+    "description": "Testing Email sending",
+    "keywords": [
+    ],
+    "homepage": "https://www.drupal.org/project/custommail",
+    "minimum-stability": "dev",
+    "support": {
+        "issues": "https://www.drupal.org/project/issues/custommail",
+        "source": "http://cgit.drupalcode.org/custommail",
+    },
+}

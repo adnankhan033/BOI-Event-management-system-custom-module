@@ -1,0 +1,5 @@
+custom_hooks.tab1:
+  route_name: custom_hooks.cancelled
+  base_route: entity.node.canonical
+  title:  Cancel
+  weight: 22

@@ -1,0 +1,5 @@
+name: 'boi Event Page access check'
+type: module
+description: 'Module to hide pages if permission is not present'
+core: 8.x
+package: 'Custom'

@@ -1,0 +1,10 @@
+<?php
+    
+function fake_permissions_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
+    
+    if($form_id =='views_form_add_new_role_page_1'){
+        
+    }
+
+}
+
